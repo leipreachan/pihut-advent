@@ -67,7 +67,8 @@ def reset_leds():
     #     pwm_led.freq(1000)
         
 def volume() -> int:
-    reading = potentiometer.read_u16() # Read the potentiometer value and store it in our 'reading' variable
+    # reading = potentiometer.read_u16() # Read the potentiometer value and store it in our 'reading' variable
+    reading = 15_000
     return reading
 
 def get_led(note: str) -> Pin:
@@ -140,4 +141,4 @@ def main(melody: str):
     playmelody(melody)
     reset_leds()
 
-main(pink_panter)
+main(got)
