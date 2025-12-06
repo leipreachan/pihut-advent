@@ -9,18 +9,18 @@ potentiometer = ADC(Pin(27))
 
 # Create our library of tone variables for "Jingle Bells"
 
-A = 430
-As = 467
+A = 440
+As = 466
 B = 494
-C = 525
-Cs = 557
-D = 590
-Ds = 625
-E = 659
-F = 698
-Fs = 740
-G = 784
-Gs = 830
+C = 261
+Cs = 277
+D = 293
+Ds = 311
+E = 330
+F = 349
+Fs = 370
+G = 392
+Gs = 415
 
 notes = {
     "A": A,

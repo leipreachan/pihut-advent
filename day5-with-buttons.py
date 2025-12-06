@@ -9,18 +9,18 @@ potentiometer = ADC(Pin(27))
 
 # Create our library of tone variables for "Jingle Bells"
 
-A = 430
-As = 467
+A = 440
+As = 466
 B = 494
-C = 525
-Cs = 557
-D = 590
-Ds = 625
-E = 659
-F = 698
-Fs = 740
-G = 784
-Gs = 830
+C = 261
+Cs = 277
+D = 293
+Ds = 311
+E = 330
+F = 349
+Fs = 370
+G = 392
+Gs = 415
 
 notes = {
     "A": A,
@@ -108,29 +108,48 @@ def turn_led_by_freq(note: str, val: int):
         leds[2].value(1)
         # pwm_leds[2].duty_u16(val)
     
-def get_freq_by_note(note: str) -> int:
-    return notes[note]
+def get_freq_by_note(note: str, oct: str|None) -> int:
+    if not oct:
+        oct = "4"
+    return notes[note] * 2**(int(oct)-4)
 
-# Create our function with arguments
-def playtone(note: str|None, vol: int, delay1: str|None, delay2: str|None) -> None:
-    print(f"{note=} {vol=} {delay1=} {delay2=}")
-    if note and note != "REST":
-        freq = get_freq_by_note(note)
-        led = get_led(note)
-        led.value(1)
-        buzzer.duty_u16(vol)
-        buzzer.freq(freq)
-        
-    delay = 1/float(delay1) if delay1 else 0.05
-    time.sleep(delay)
+def playdelay(delay1: float, delay2) -> None:
+    time.sleep(delay1)
+    time.sleep(delay2)
     
-    if note and note != "REST":
+def playtone(freq: int, led: Pin|None, vol: int, delay1: float, delay2: float) -> None:
+    if led:
+        led.value(1)
+    buzzer.duty_u16(vol)
+    buzzer.freq(freq)
+    time.sleep(delay1)
+    if led:
         led.value(0)
     buzzer.duty_u16(0)
-    
-    delay = 1/float(delay2) if delay2 else 0.25
-    time.sleep(delay)
+    time.sleep(delay2)
   
+def kick(vol: int):
+    set_leds(1)
+    playtone(160, None, vol, 0.01, 0)
+    playtone(240, None, vol, 0.01, 0)
+    playtone(400, None, vol, 0.005, 0.01)
+    set_leds(0)
+      
+# Create our function with arguments
+def playnote(note: str|None, vol: int, oct: str|None, delay1: str|None, delay2: str|None) -> None:
+    print(f"{note=} {vol=} {delay1=} {delay2=}")
+    if note:
+        delay_note = 0 if delay1 == "0" else 1/float(delay1) if delay1 else 0.05
+        pause = 0 if delay2 == "0" else 1/float(delay2) if delay2 else 0.25 
+        if note == "REST":
+            playdelay(delay_note, pause)
+        elif note == "RESTKICK":
+            kick(vol)
+        else:   
+            freq = int(get_freq_by_note(note, oct))
+            playtone(freq, get_led(note), vol, delay_note, pause)
+        
+    
 button_state = False
 
 def swap_state():
@@ -155,23 +174,24 @@ def playmelody(melody: str):
         vol = volume()
         
         clean_note = note.strip()
-        v = re.match("((\d+):)?([A-z]+)(:(\d+))?", clean_note)
-        [_, delay1, name, _, delay2] = v.groups() if v else [None, None, None, None, None]
-        playtone(name, vol, delay1, delay2)
+        v = re.match("((\d+):)?([A-z]+)(\d)?(:(\d+))?", clean_note)
+        [_, delay1, name, oct, _, delay2] = v.groups() if v else [None, None, None, None, None, None]
+        playnote(name, vol, oct, delay1, delay2)
     
     if is_playing():
         swap_state()
         
 
-dre = "C - D - A - C - D - A - D - B - D - A - B - D - G - D - C - D - A - C - D - A - D - D - B - D - A - B - D - G - D - C - D - A - C - D - A - D - B - D - A - B - D - G - D - C - D - A - C - D - A - D - B - D - A - B - D - G - D" 
-mario = "E - E - E - E - C - E - G - G - C - G - E - C - E - E - E - C - E - G"
+dre = "8:G4:8 - 8:C5:8 - 8:D#5:8 - 8:F5:8 - 8:G4:8 - 8:C5:8 - 8:D#5:8 - 8:F5:8 - 8:G4:8 - 8:C5:8 - 8:D#5:8 - 8:F5:8 - 8:G4:8 - 8:C5:8 - 8:D#5:8 - 8:F5:8 - 8:REST:8 " 
+mario = "16:E5:16 - 16:E5:16 - 16:E5:8 - 8:REST:8 - 16:C5:16 - 16:E5:16 - 8:G5:8 - 8:REST:8 - 8:G4:8 - 8:REST:8 - 16:C5:16 - 16:G4:16 - 16:E4:16 - 16:A4:16 - 16:B4:16 - 16:A4:16 - 16:G4:16 - 16:E5:16 - 16:G5:16 - 16:A5:8 - 8:REST:8 - 16:F5:16 - 16:G5:16 - 16:F5:16 - 16:E5:16 - 16:D5:16 - 16:E5:16 - 16:C5:16 - 16:D5:16 - 8:B4:8 "
 got = "8:G - 8:C - 16:DS - 16:F - 8:G - 8:C - 16:DS - 16:F - 8:G - 8:C - 16:DS - 16:F - 8:G - 8:C - 16:DS - 16:F - 8:G - 8:C - 16:E - 16:F - 8:G - 8:C - 16:E - 16:F - 8:G - 8:C - 16:E - 16:F - 8:G - 8:C - 16:E - 16:F - 4:G - 4:C - 16:DS4 - 16:F4 - 4:G4 - 4:C4 - 16:DS4 - 16:F4 - 1:D4 - 4:F4 - 4:AS3 - 16:DS4 - 16:D4 - 4:F4 - 4:AS3 - 16:DS4 - 16:D4 - 1:C4 - 4:G4 - 4:C4 - 16:DS4 - 16:F4 - 4:G4 - 4:C4 - 16:DS4 - 16:F4 - 1:D4 - 4:F4 - 4:AS3 - 16:DS4 - 16:D4 - 4:F4 - 4:AS3 - 16:DS4 - 16:D4 - 1:C4 - 4:G4 - 4:C4 - 16:DS4 - 16:F4 - 4:G4 - 4:C4 - 16:DS4 - 16:F4 - 2:D4 - 4:F4 - 4:AS3 - 8:D4 - 8:DS4 - 8:D4 - 8:AS3 - 1:C4 - 2:C5 - 2:AS4 - 2:C4 - 2:G4 - 2:DS4 - 4:DS4 - 4:F4 - 1:G4 - 2:C5 - 2:AS4 - 2:C4 - 2:G4 - 2:DS4 - 4:DS4 - 4:D4 - 8:C5 - 8:G4 - 16:GS4 - 16:AS4 - 8:C5 - 8:G4 - 16:GS4 - 16:AS4 - 8:C5 - 8:G4 - 16:GS4 - 16:AS4 - 8:C5 - 8:G4 - 16:GS4 - 16:AS4 - 4:REST - 16:GS5 - 16:AS5 - 8:C6 - 8:G5 - 16:GS5 - 16:AS5 - 8:C6 - 16:G5 - 16:GS5 - 16:AS5 - 8:C6 - 8:G5 - 16:GS5 - 16:AS5"
 tokyo_drift = "4:AS4 - 4:REST - 4:AS4 - 4:REST - 4:AS4 - 4:REST - 4:AS4 - 4:REST - 3:AS4 - 3:B4 - 4:DS5 - 4:AS4 - 4:REST - 4:AS4 - 4:REST - 3:AS4 - 3:B4 - 4:DS5 - 4:AS4 - 4:REST - 4:AS4 - 4:REST - 3:AS4 - 3:B4 - 4:DS5 - 4:AS4 - 4:REST - 4:AS4 - 4:REST - 3:AS4 - 3:B4 - 4:DS5 - 4:F5 - 4:REST - 4:F5 - 4:REST - 3:GS5 - 3:FS5 - 4:F5 - 4:AS4 - 4:REST - 4:AS4 - 4:REST - 3:GS5 - 3:FS5 - 4:F5 - 4:AS4 - 4:REST - 4:AS4 - 4:REST - 3:AS4 - 3:B4 - 4:DS5 - 4:AS4 - 4:REST - 4:AS4 - 4:REST - 3:AS4 - 3:B4 - 4:DS5 - 4:AS4 - 4:REST - 4:AS4 - 4:REST"
 pink_panter = "2:REST - 4:REST - 8:REST - 8:DS4 - 4:E4 - 8:REST - 8:FS4 - 4:G4 - 8:REST - 8:DS4 - 8:E4 - 8:FS4 - 8:G4 - 8:C5 - 8:B4 - 8:E4 - 8:G4 - 8:B4 - 2:AS4 - 16:A4 - 16:G4 - 16:E4 - 16:D4 - 2:E4 - 4:REST - 8:REST - 4:DS4 - 4:E4 - 8:REST - 8:FS4 - 4:G4 - 8:REST - 8:DS4 - 8:E4 - 8:FS4 - 8:G4 - 8:C5 - 8:B4 - 8:G4 - 8:B4 - 8:E5 - 1:DS5 - 2:D5 - 4:REST - 8:REST - 8:DS4 - 4:E4 - 8:REST - 8:FS4 - 4:G4 - 8:REST - 8:DS4 - 8:E4 - 8:FS4 - 8:G4 - 8:C5 - 8:B4 - 8:E4 - 8:G4 - 8:B4 - 2:AS4 - 16:A4 - 16:G4 - 16:E4 - 16:D4 - 4:E4 - 4:REST - 4:REST - 8:E5 - 8:D5 - 8:B4 - 8:A4 - 8:G4 - 8:E4 - 16:AS4 - 8:A4 - 16:AS4 - 8:A4 - 16:AS4 - 8:A4 - 16:AS4 - 8:A4 - 16:G4 - 16:E4 - 16:D4 - 16:E4 - 16:E4 - 2:E4"
-  
+brigada = "4:G4:4 - 8:A4:8 - 8:A#4:8 - 4:A4:4 - 4:G4:4 - 4:F4:4 - 4:E4:4 - 8:F4:8 - 8:G4:8 - 4:D4:4 - 4:E4:4 - 2:G4:4"
+
 melodies = [
     got,
-    mario,
+    tokyo_drift,
     pink_panter
 ]
 
