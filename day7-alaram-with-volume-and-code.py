@@ -5,38 +5,29 @@
 from machine import Pin, PWM, ADC
 import time
 
+## constants and globals
 CODE_MAX_LENGTH = 10
 DEACTIVATION_CODE = [1, 2, 0]
+JINGLES = {
+    "start": [(523, 0.12), (659, 0.12), (784, 0.20)],
+    "stop": [(784, 0.12), (659, 0.12), (523, 0.20)],
+    "bad_code": [(900, 0.08), (700, 0.08), (500, 0.12)],
+}
+alarm_active = False
 
+# components
 onboardLED = Pin(25, Pin.OUT)
 potentiometer = ADC(Pin(27))
-
 leds = [Pin(20, Pin.OUT), Pin(19, Pin.OUT), Pin(18, Pin.OUT)]
-
-# Set up the Buzzer pin as PWM
 buzzer = PWM(Pin(13))
-
-# Set PWM duty to 0% at program start
-buzzer.duty_u16(0)
-
 # Set up PIR pin with pull down
 pir = Pin(26, Pin.IN, Pin.PULL_DOWN)
-
-onboardLED.value(1)  # Turn onboard LED ON to show program is running
 
 buttons = [
     Pin(12, Pin.IN, Pin.PULL_DOWN),
     Pin(8, Pin.IN, Pin.PULL_DOWN),
     Pin(3, Pin.IN, Pin.PULL_DOWN),
 ]
-
-jingles = {
-    "start": [(523, 0.12), (659, 0.12), (784, 0.20)],
-    "stop": [(784, 0.12), (659, 0.12), (523, 0.20)],
-    "bad_code": [(900, 0.08), (700, 0.08), (500, 0.12)],
-}
-
-alarm_active = False
 
 
 def is_button_pressed() -> bool:
@@ -69,13 +60,12 @@ def verify_code(max_code_enter_time: int = 5) -> bool:
             time.sleep(0.1)
             if time.time() > start + max_code_enter_time:
                 return False
-        
+
         button_index = read_button_code()
         entered_code.append(button_index)
         if entered_code == DEACTIVATION_CODE:
             print(f"Entered code: {entered_code}")
             return True
-        
 
     return entered_code == DEACTIVATION_CODE
 
@@ -87,18 +77,20 @@ def play_track(track):
         time.sleep(delay)
     set_volume(0)
 
+
 def is_alarm_active() -> bool:
     return alarm_active
 
+
 def enable_alarm():
-    play_track(jingles["start"])
+    play_track(JINGLES["start"])
 
     global alarm_active
     alarm_active = True
 
 
 def disable_alarm():
-    play_track(jingles["stop"])
+    play_track(JINGLES["stop"])
     global alarm_active
     alarm_active = False
 
@@ -110,7 +102,7 @@ def check_code() -> bool:
             return True
         else:
             print("Wrong code")
-            play_track(jingles["bad_code"])
+            play_track(JINGLES["bad_code"])
     return False
 
 
@@ -181,7 +173,14 @@ def warm_up_pir(delay: int = 5):
     print("Sensor ready!")
 
 
+def reset():
+    onboardLED.value(1)  # Turn onboard LED ON to show program is running
+    # Set PWM duty to 0% at program start
+    buzzer.duty_u16(0)
+
+
 def main():
+    reset()
     warm_up_pir()
     set_alarm()
 
