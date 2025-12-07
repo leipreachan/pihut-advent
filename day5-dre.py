@@ -7,8 +7,6 @@ import time
 buzzer = PWM(Pin(13)) # Set the buzzer to PWM mode
 potentiometer = ADC(Pin(27))
 
-# Create our library of tone variables for "Jingle Bells"
-
 A = 440
 As = 466
 B = 494
@@ -42,7 +40,7 @@ notes = {
     "G#": Gs
 }
 
-red = ["A", "A#", "AS", "B", "C", "C#", "CS"]
+red = notes[0:5]
 green = ["D", "D#", "DS", "E"]
 amber = ["F", "F#", "FS", "G", "G#", "GS"]
 
