@@ -5,15 +5,13 @@
 from machine import Pin, PWM, ADC
 import time
 
+CODE_MAX_LENGTH = 10
 DEACTIVATION_CODE = [1, 2, 0]
 
 onboardLED = Pin(25, Pin.OUT)
 potentiometer = ADC(Pin(27))
 
-# Set up the LED pins
-red = Pin(18, Pin.OUT)
-amber = Pin(19, Pin.OUT)
-green = Pin(20, Pin.OUT)
+leds = [Pin(20, Pin.OUT), Pin(19, Pin.OUT), Pin(18, Pin.OUT)]
 
 # Set up the Buzzer pin as PWM
 buzzer = PWM(Pin(13))
@@ -31,6 +29,12 @@ buttons = [
     Pin(8, Pin.IN, Pin.PULL_DOWN),
     Pin(3, Pin.IN, Pin.PULL_DOWN),
 ]
+
+jingles = {
+    "start": [(523, 0.12), (659, 0.12), (784, 0.20)],
+    "stop": [(784, 0.12), (659, 0.12), (523, 0.20)],
+    "bad_code": [(900, 0.08), (700, 0.08), (500, 0.12)],
+}
 
 alarm_active = False
 
@@ -55,32 +59,69 @@ def read_button_code() -> int:
     return -1
 
 
-def verify_code() -> bool:
+def verify_code(max_code_enter_time: int = 5) -> bool:
     """Verify if the entered code matches the deactivation code"""
     entered_code = []
+    start = time.time()
     print("Enter deactivation code:")
-    for _ in range(len(DEACTIVATION_CODE)):
+    for _ in range(CODE_MAX_LENGTH):
         while not is_button_pressed():
             time.sleep(0.1)
+            if time.time() > start + max_code_enter_time:
+                return False
+        
         button_index = read_button_code()
         entered_code.append(button_index)
+        if entered_code == DEACTIVATION_CODE:
+            print(f"Entered code: {entered_code}")
+            return True
+        
 
-    print(f"Entered code: {entered_code}")
     return entered_code == DEACTIVATION_CODE
 
+
+def play_track(track):
+    set_volume()
+    for freq, delay in track:
+        buzzer.freq(freq)  # Higher pitch
+        time.sleep(delay)
+    set_volume(0)
 
 def is_alarm_active() -> bool:
     return alarm_active
 
-
 def enable_alarm():
+    play_track(jingles["start"])
+
     global alarm_active
     alarm_active = True
 
 
 def disable_alarm():
+    play_track(jingles["stop"])
     global alarm_active
     alarm_active = False
+
+
+def check_code() -> bool:
+    if is_button_pressed():
+        if verify_code():
+            print("Entered correct code. Alarm deactivated.")
+            return True
+        else:
+            print("Wrong code")
+            play_track(jingles["bad_code"])
+    return False
+
+
+def set_leds(value: int):
+    for led in leds:
+        led.value(value)
+
+
+def set_volume(vol: int | None = None):
+    volume = potentiometer.read_u16()
+    buzzer.duty_u16(vol if vol is not None else volume)
 
 
 def alarm(repeat: int = 3) -> bool:  # Our alarm function
@@ -88,31 +129,24 @@ def alarm(repeat: int = 3) -> bool:  # Our alarm function
     # Set PWM duty (volume up)
     for _ in range(repeat):  # Run this 3 times
         # Read potentiometer value for volume control
-        volume = potentiometer.read_u16()
-        buzzer.duty_u16(volume)
+        set_volume()
 
         buzzer.freq(1000)  # Higher pitch
-
-        red.value(1)  # Red ON
-        amber.value(1)  # Amber ON
-        green.value(1)  # Green ON
-
+        set_leds(1)
         time.sleep(0.5)
-
-        buzzer.freq(500)  # Lower pitch
-
-        red.value(0)  # Red OFF
-        amber.value(0)  # Amber OFF
-        green.value(0)  # Green OFF
-
-        time.sleep(0.5)
-        if is_button_pressed() and verify_code():
-            print("Entered correct code. Alarm deactivated.")
-            result = True
+        if result := check_code():
             break
 
+        buzzer.freq(500)  # Lower pitch
+        set_leds(0)
+        time.sleep(0.5)
+        if result := check_code():
+            break
+
+    # turn off leds
+    set_leds(0)
     # Set PWM duty (volume off)
-    buzzer.duty_u16(0)
+    set_volume(0)
     return result
 
 
@@ -139,11 +173,13 @@ def set_alarm():
 
             print("Sensor active")  # Let us know that the sensor is active again
 
+
 def warm_up_pir(delay: int = 5):
     # Warm up/settle PIR sensor
     print("Warming up...")
     time.sleep(delay)  # Delay to allow the sensor to settle
     print("Sensor ready!")
+
 
 def main():
     warm_up_pir()
