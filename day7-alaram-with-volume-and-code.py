@@ -113,7 +113,7 @@ def set_leds(value: int):
 
 def set_volume(vol: int | None = None):
     volume = potentiometer.read_u16()
-    buzzer.duty_u16(vol if vol is not None else volume)
+    buzzer.duty_u16(vol if vol is not None else volume if volume else 10_000)
 
 
 def alarm(repeat: int = 3) -> bool:  # Our alarm function

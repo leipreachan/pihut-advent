@@ -89,3 +89,16 @@ https://thepihut.com/advent
 [Code: day7-alaram-with-volume-and-code.py](day7-alaram-with-volume-and-code.py)
 
 [![docs/day7-alarm-with-buttons.fzz](docs/day7-alarm-with-buttons_bb.svg)](docs/day7-alarm-with-buttons.fzz)
+
+### Day 8 - Temperature Sensor
+
+- turn on onboard LED
+- wait for 5 seconds befor first reading
+- if reading is not as the previous one +/- 0.05 - print its value
+- if reading < 18 - turn on red led (Pin(20))
+- if 18 < reading < 22 - turn on amber led (Pint(19))
+- if reading > 22 - turn on green led (Pin(18))
+- when switching led, use buzzer to "beep" PWM(Pin(13))
+- use potentiometer to control voluem (ADC(Pin(27)))
+
+[Code: day8.py](day8.py)
