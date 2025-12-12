@@ -132,6 +132,12 @@ https://thepihut.com/advent
 
 [Code: ssd1306.py](ssd1306.py)
 [Code: ky015.py](ky015.py)
-[Code: day11-with-ky015.py.py](day11-with-ky015.py.py)
+[Code: day11-with-ky015.py](day11-with-ky015.py)
 
 [![docs/day11-with-ky015.fzz](docs/day11-with-ky015_bb.png)](docs/day11-with-ky015.fzz)
+
+## Day 12 - LED strip
+
+- Running lights (each time with random color)
+
+[Code: day12.py](day12.py)
