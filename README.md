@@ -90,7 +90,7 @@ https://thepihut.com/advent
 
 [![docs/day7-alarm-with-buttons.fzz](docs/day7-alarm-with-buttons_bb.svg)](docs/day7-alarm-with-buttons.fzz)
 
-### Day 8 - Temperature Sensor
+## Day 8 - Temperature Sensor
 
 - turn on onboard LED
 - wait for 5 seconds befor first reading
@@ -102,3 +102,36 @@ https://thepihut.com/advent
 - use potentiometer to control voluem (ADC(Pin(27)))
 
 [Code: day8.py](day8.py)
+
+## Day 9 - Tilt Sensor
+
+- Display how many times the sensor got tilted
+
+[Code: day9.py](day9.py)
+
+## Day 10 - A Pair of Infrared Sensors
+
+- A game where the player should cross the line as many times as possible in 1 minute
+
+[Code: day10.py](day10.py)
+
+
+## Day 11 - OLED screen
+
+- Display light level
+
+[Code: ssd1306.py](ssd1306.py)
+[Code: day11.py](day11.py)
+
+### Basic indoor weather station
+
+- Get temperature and humidity from [KY-015 sensor](https://www.rp2040learning.com/code/micropython/a-raspberry-pi-pico-and-ky-015-temperature-sensor.php)
+- Get light level from the light sensor
+- Display data on the OLED
+- Use button to turn the screen on and off
+
+[Code: ssd1306.py](ssd1306.py)
+[Code: ky015.py](ky015.py)
+[Code: day11-with-ky015.py.py](day11-with-ky015.py.py)
+
+[![docs/day11-with-ky015.fzz](docs/day11-with-ky015_bb.png)](docs/day11-with-ky015.fzz)

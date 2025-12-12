@@ -1,6 +1,7 @@
 # Imports
 from machine import Pin, PWM
-import time, sys
+import time
+import sys
 
 # Set up LED pins
 red = Pin(18, Pin.OUT)
