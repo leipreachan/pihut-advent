@@ -138,6 +138,7 @@ https://thepihut.com/advent
 
 ## Day 12 - LED strip
 
-- Running lights (each time with random color)
+- Running lights
+- Button switch to one of 4 predefined patterns
 
 [Code: day12.py](day12.py)
