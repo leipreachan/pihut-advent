@@ -18,6 +18,7 @@ display = SSD1306_I2C(128, 32, i2c)
 
 black = (0, 0, 0)
 counter = 0
+break_run = False
 
 def random_bit():
     return random.randint(0, 255)
@@ -46,20 +47,18 @@ def set_brightness(color, brightness):
     return (int(red * brightness), int(green * brightness), int(blue * brightness))
     
 def fade_in(seconds, pixels, color, steps = 30):
-    prev_pattern = current_pattern
     for i in range(steps):
-        if prev_pattern != current_pattern:
-            break
+        if break_run:
+            return
         for pixel in pixels:
             strip[pixel] = set_brightness(color, i/steps)
         time.sleep(seconds/steps)
         strip.write()
         
 def fade_out(seconds, pixels, color, steps = 30):
-    prev_pattern = current_pattern
     for i in range(steps+1):
-        if prev_pattern != current_pattern:
-            break
+        if break_run:
+            return
         for pixel in pixels:
             brightness = 0 if steps == i else (steps-i)/steps
             strip[pixel] = set_brightness(color, brightness)
@@ -67,8 +66,10 @@ def fade_out(seconds, pixels, color, steps = 30):
         strip.write()
 
 def run_lights_from_list(map, color):
+    mydelay = get_delay()
     for i in map:
-        mydelay = get_delay()
+        if break_run:
+            return
         # Set the next LED in the range to light with a colour
         strip[i] = color
         # Delay - the speed of the chaser
@@ -114,6 +115,8 @@ def pattern_dots_with_gaps(color):
     one_or_zero = counter % 2
     for i in range(NUMBER_OF_LEDS):
         mydelay = get_delay()
+        if break_run:
+            return
         if i % 2 == one_or_zero:
             strip[i] = color
         else:
@@ -123,35 +126,15 @@ def pattern_dots_with_gaps(color):
 
 def pattern_dots_on_black(color):
     map = create_map()
-    mydelay = get_delay()
     for i in map:
+        mydelay = get_delay()
+        if break_run:
+            return
         for j in range(NUMBER_OF_LEDS):
             strip[j] = black
         strip[i] = color
         strip.write()
         time.sleep(mydelay)
-       
-def pattern_progressive_wave(color):
-    center = int(NUMBER_OF_LEDS / 2)
-    mydelay = get_delay()
-    for j in range(center + 2):
-        map = []
-        for i in range(j):
-            if i == 0:
-                map.append(center)
-            else:
-                map.append(center + i)
-                map.append(center - i)
-        
-        print(f"{map=}")
-        for i in map:
-            # strip[i] = set_brightness(color, center abs(center - i)/center)
-            print(f"{i=} {strip[i]=}")
-        
-        strip.write()
-        time.sleep(0.5)
-        time.sleep(mydelay)
-
     
 def pattern_fade_all(color):
     map = list(range(NUMBER_OF_LEDS))
@@ -162,12 +145,36 @@ def pattern_fade_dots_on_black(color):
     map = create_map()
     for i in map:
         mydelay = get_delay()
+        if break_run:
+            return
         for j in range(NUMBER_OF_LEDS):
             strip[j] = black
         strip.write()
         fade_in(0.5, [i], color)
         fade_out(0.5, [i], color)
         time.sleep(mydelay)
+
+    
+def pattern_fade_dots_from_full(color):
+    for j in range(NUMBER_OF_LEDS):
+        strip[j] = black
+        strip.write()
+    fade_in_map = create_map()
+    for i in fade_in_map:
+        mydelay = get_delay()
+        if break_run:
+            return
+        fade_in(potentiometer.read_u16()/30000, [i], color)
+        time.sleep(mydelay)
+    fade_out_map = create_map()
+    for i in fade_out_map:
+        mydelay = get_delay()
+        if break_run:
+            return
+        fade_out(potentiometer.read_u16()/30000, [i], color)
+        # strip[i] = black
+        time.sleep(mydelay)
+        
     
 def pattern_fade_group_from_black(color):
     map = []
@@ -180,9 +187,8 @@ def pattern_fade_group_from_black(color):
     
          
 def pattern_turning_off_dots(color):
-    map = create_map()
+    pattern_fade_all(color)
     mydelay = get_delay()
-    run_lights_from_list(map, black)
     time.sleep(mydelay)
     for i in range(NUMBER_OF_LEDS):
         strip[i] = color
@@ -197,9 +203,11 @@ def all_black():
     time.sleep(1000)
 
 
+
 current_pattern = 0
-patterns = [
+known_patterns = [
     # pattern_progressive_wave,
+    pattern_fade_dots_from_full,
     pattern_fade_group_from_black,
     pattern_fade_dots_on_black,
     pattern_fade_all,
@@ -209,8 +217,13 @@ patterns = [
     pattern_reverse_sequence,
     pattern_dots_with_gaps,
     pattern_dots_on_black,
-    pattern_turning_off_dots
+    pattern_turning_off_dots,
 ]
+
+def random_pattern_every_time(color):
+    random.choice(known_patterns)(color) # type: ignore
+    
+patterns = known_patterns + [random_pattern_every_time]
 last_press = 0
 debounce_ms = 1000
 
@@ -229,12 +242,14 @@ def display_pattern_name():
 def button_handle(p):
     global current_pattern
     global last_press
+    global break_run
     now = time.ticks_ms()
 
     if time.ticks_diff(now, last_press) < debounce_ms:
         return  # debounce
 
     last_press = now
+    break_run = True
     current_pattern = (current_pattern + 1) % len(patterns)
     print(f"New pattern: {current_pattern}")
     display_pattern_name()
@@ -245,5 +260,8 @@ button.irq(lambda p: button_handle(p), Pin.PULL_DOWN)
 current_pattern = -1
 button_handle(0)
 while color := random_color():  # Run forever
+    if break_run:
+        break_run = False
     patterns[current_pattern](color)
     time.sleep(0.5)
+    counter += 1

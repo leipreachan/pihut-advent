@@ -142,3 +142,13 @@ https://thepihut.com/advent
 - Button switch to one of 4 predefined patterns
 
 [Code: day12.py](day12.py)
+
+### LED Strip with button, multiple programms and OLED
+
+- The screen displays the name of the current program
+- Buttons switches between programs
+- Potentiometer regulates the delay
+- The strip blinks
+
+[Code: day12-with-screen.py](day12-with-screen.py)
+[![docs/day12-with-screen.fzz](docs/day12-with-screen_bb.png)](docs/day12-with-screen.fzz)
